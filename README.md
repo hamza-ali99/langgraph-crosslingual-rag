@@ -38,7 +38,7 @@ Built with **LangGraph**, **LangChain**, **Groq**, and **Cohere**.
 | **Cross-lingual Retrieval** | English → Japanese translation | Japanese manual indexed in Japanese; queries translated for better semantic search |
 | **Reranking** | Cohere `rerank-multilingual-v3.0` | Retrieves 100 chunks, reranks to top 8 for quality |
 | **Context Capping** | 800 chars per chunk | Fits within Groq's free-tier token limits while preserving tables |
-| **Stateless Generation** | No conversation history in LLM prompt | Prevents cross-turn hallucination and topic bleed |
+| **Stateless Generation** | History used for query rewriting only; final answer generated from standalone query + retrieved chunks | Prevents cross-turn hallucination and topic bleed |
 | **Evaluation** | LLM-as-judge + deterministic citation check | Automated faithfulness, correctness, and citation scoring |
 
 ---
