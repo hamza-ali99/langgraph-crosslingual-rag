@@ -8,8 +8,6 @@ Built with **LangGraph**, **LangChain**, **Groq**, and **Cohere**.
 
 ## Demo
 
-![Chat Interface](docs/screenshot-chat.png)
-
 > **User:** What kind of radiator coolant does the car use?  
 > **Assistant:** The car uses Suzuki Super Long Life Coolant (blue) as the radiator coolant, as stated on [Page 281]. The specified quantity is 3.3 L for non-turbo cars without idling stop and 3.2 L for non-turbo cars with idling stop.
 
