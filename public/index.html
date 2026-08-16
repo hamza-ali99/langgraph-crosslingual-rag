@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moco 2012 Assistant</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            background: #f4f6f9;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .chat-container {
+            max-width: 800px;
+            width: 100%;
+            background: white;
+            border-radius: 28px;
+            box-shadow: 0 20px 35px -10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            height: 80vh;
+            overflow: hidden;
+        }
+        .header {
+            background: #1a3e2f;
+            color: white;
+            padding: 20px 24px;
+            text-align: center;
+        }
+        .header h1 { margin: 0; font-size: 1.6rem; font-weight: 500; }
+        .header p { margin: 5px 0 0; opacity: 0.8; font-size: 0.85rem; }
+        .messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            background: #fafbfd;
+        }
+        .message {
+            display: flex;
+            flex-direction: column;
+            max-width: 80%;
+        }
+        .user { align-self: flex-end; }
+        .assistant { align-self: flex-start; }
+        .bubble {
+            padding: 12px 18px;
+            border-radius: 24px;
+            line-height: 1.4;
+            font-size: 0.95rem;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .user .bubble {
+            background: #1a3e2f;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        .assistant .bubble {
+            background: #e9eef3;
+            color: #1e2a3a;
+            border-bottom-left-radius: 4px;
+        }
+        .message small {
+            font-size: 0.7rem;
+            margin: 4px 12px 0;
+            color: #6c7a89;
+        }
+        .input-area {
+            padding: 16px 20px;
+            border-top: 1px solid #e2e8f0;
+            background: white;
+            display: flex;
+            gap: 12px;
+        }
+        input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #cbd5e0;
+            border-radius: 40px;
+            font-size: 0.95rem;
+            outline: none;
+        }
+        input:focus {
+            border-color: #1a3e2f;
+            box-shadow: 0 0 0 2px rgba(26,62,47,0.2);
+        }
+        button {
+            background: #1a3e2f;
+            color: white;
+            border: none;
+            padding: 0 24px;
+            border-radius: 40px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        button:hover { background: #0f2e22; }
+        button:disabled { background: #9aaeb5; cursor: not-allowed; }
+        .typing {
+            font-style: italic;
+            color: #6c7a89;
+            padding: 8px 20px;
+            font-size: 0.85rem;
+        }
+        footer {
+            text-align: center;
+            font-size: 0.7rem;
+            padding: 8px;
+            background: #f0f2f5;
+            color: #5a6874;
+        }
+    </style>
+</head>
+<body>
+<div class="chat-container">
+    <div class="header">
+        <h1>🗼 Nissan Moco 2012</h1>
+        <p>Ask anything about your Japanese owner's manual — answers in English with citations</p>
+    </div>
+    <div class="messages" id="messages">
+        <div class="message assistant">
+            <div class="bubble">👋 Hello! I can read the Japanese manual for your Moco. Ask me about maintenance, warning lights, fluids, specs, or anything in the manual.</div>
+        </div>
+    </div>
+    <div class="input-area">
+        <input type="text" id="questionInput" placeholder="e.g., What is the fuel tank capacity?" autofocus>
+        <button id="sendBtn">Send</button>
+    </div>
+    <footer>Always cites page numbers from the original 2012 owner's manual</footer>
+</div>
+
+<script>
+    const messagesContainer = document.getElementById('messages');
+    const questionInput = document.getElementById('questionInput');
+    const sendBtn = document.getElementById('sendBtn');
+
+    // Generate a random session ID for this browser tab (stays for the duration)
+    // This enables conversation memory on the server.
+    const sessionId = 'session_' + Math.random().toString(36).substring(2, 10);
+    console.log('Session ID:', sessionId);
+
+    function addMessage(text, sender) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${sender}`;
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        bubble.innerHTML = text.replace(/\n/g, '<br>');
+        messageDiv.appendChild(bubble);
+        const time = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+        const small = document.createElement('small');
+        small.textContent = time;
+        messageDiv.appendChild(small);
+        messagesContainer.appendChild(messageDiv);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    function showTyping() {
+        const typingDiv = document.createElement('div');
+        typingDiv.id = 'typingIndicator';
+        typingDiv.className = 'typing';
+        typingDiv.textContent = 'Assistant is thinking...';
+        messagesContainer.appendChild(typingDiv);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    function removeTyping() {
+        const typing = document.getElementById('typingIndicator');
+        if (typing) typing.remove();
+    }
+
+    async function askQuestion() {
+        const question = questionInput.value.trim();
+        if (!question) return;
+
+        addMessage(question, 'user');
+        questionInput.value = '';
+        sendBtn.disabled = true;
+        showTyping();
+
+        try {
+            const response = await fetch('/ask', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question, sessionId })
+            });
+            const data = await response.json();
+            removeTyping();
+            if (data.error) {
+                addMessage(`❌ Error: ${data.error}`, 'assistant');
+            } else {
+                addMessage(data.answer, 'assistant');
+            }
+        } catch (err) {
+            removeTyping();
+            addMessage(`❌ Network error: ${err.message}`, 'assistant');
+        } finally {
+            sendBtn.disabled = false;
+            questionInput.focus();
+        }
+    }
+
+    sendBtn.addEventListener('click', askQuestion);
+    questionInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') askQuestion();
+    });
+</script>
+</body>
+</html>
